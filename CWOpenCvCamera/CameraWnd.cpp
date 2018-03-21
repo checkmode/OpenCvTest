@@ -89,6 +89,7 @@ void CameraWnd::UninitWnd()
 	if (NULL != m_hWnd)
 	{
 		_pLog->info("UninitWnd do");
+
 		KillTimer(m_hWnd, IDT_TIMER1);
 		ResetEvent(m_hAsyncEventHandle);
 		PostMessage(m_hWnd, WM_DESTROY, NULL, NULL);
@@ -314,7 +315,7 @@ BOOL CameraWnd::InitInstance(HINSTANCE hInstance, int nCmdShow)
 	::MoveWindow(m_hWnd, 800, 100, 300, 200, TRUE);
 
 	ShowWindow(m_hWnd, nCmdShow);
-	SetTimer(m_hWnd, IDT_TIMER1, 100, NULL);
+	SetTimer(m_hWnd, IDT_TIMER1, 50, NULL);
 
 	return TRUE;
 }
@@ -732,6 +733,8 @@ LRESULT CameraWnd::runProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 	}
 	case WM_DESTROY:
 	{
+        _pLog->info("WM_DESTROY");
+
 		PostQuitMessage(0);
 		break;
 	}
@@ -1062,15 +1065,20 @@ void CameraWnd::setFrame(int w, int h)
                 // Transform from int to char via Bitwise operators
                 char EXT[] = { (char)(ex & 0XFF) , (char)((ex & 0XFF00) >> 8),(char)((ex & 0XFF0000) >> 16),(char)((ex & 0XFF000000) >> 24), 0 };
                 _pLog->info("get CV_CAP_PROP_FOURCC={}", EXT);
-                if (0 != memcmp(EXT, "YUY2", 4))
+
+                int fps = _videoCapture.get(CV_CAP_PROP_FPS);
+                _pLog->info("get CV_CAP_PROP_FPS={}", fps);
+                //if (0 != memcmp(EXT, "YUY2", 4))
                 {
                     _videoCapture.set(CV_CAP_PROP_FOURCC,CV_FOURCC('Y','U','Y','2'));
-                    //_videoCapture.set(CV_CAP_PROP_FPS, 30);
+                    _videoCapture.set(CV_CAP_PROP_FPS, 30);
 
                     int ex1 = static_cast<int>(_videoCapture.get(CV_CAP_PROP_FOURCC));
                     // Transform from int to char via Bitwise operators
                     char EXT1[] = { (char)(ex1 & 0XFF) , (char)((ex1 & 0XFF00) >> 8),(char)((ex1 & 0XFF0000) >> 16),(char)((ex1 & 0XFF000000) >> 24), 0 };
                     _pLog->info("ater set CV_CAP_PROP_FOURCC={}", EXT1);
+                    fps = _videoCapture.get(CV_CAP_PROP_FPS);
+                    _pLog->info("ater set CV_CAP_PROP_FPS={}", fps);
                 }
 
 				_videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, w);
