@@ -20,17 +20,17 @@ CameraImpl::CameraImpl()
 	spdlog::set_pattern("[%H:%M:%S.%e] [%L][thread %t] %v");
 	CreateDirectory(TEXT("D:\\logs\\"), NULL);
 	_pLog = spdlog::rotating_logger_mt("CWOpenCvCameraLog", "D:\\logs\\CWOpenCvCameraLog.txt", 1048576 * 5, 3);
-	_pLog->flush_on(spdlog::level::err);
+	_pLog->flush_on(spdlog::level::debug);
 	_pLog->info("=============================================================================================");
 	m_pCameraWnd = new CameraWnd(_pLog);
 }
 
 CameraImpl::~CameraImpl()
 {
-	_pLog->flush();
-	spdlog::drop_all();
 	delete m_pCameraWnd;
 	m_pCameraWnd = NULL;
+	_pLog->flush();
+	spdlog::drop_all();
 }
 
 void CameraImpl::Init()

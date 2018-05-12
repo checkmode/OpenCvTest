@@ -7,7 +7,7 @@
 #define IDT_TIMER1 1001
 #define IDB_PAUSE   3301    
 #define IDB_RESUME  3302    
-#define IDB_THREE   3303 
+#define IDB_QUIT   3303 
 
 #define WM_CW_CAMERA_MASK     (WM_USER + 233)
 #define WM_CW_CAMERA_START    (WM_USER + 234)
@@ -36,7 +36,7 @@ CameraWnd::CameraWnd(std::shared_ptr<spdlog::logger> pLog)
 	, _matPreview(false)
 	, _angle(0)
 	, _run(true)
-	, _id(0)
+	, _id(-1)
 	, m_hAsyncEventHandle(INVALID_HANDLE_VALUE)
 {
 	_rectROI = cv::Rect(0, 0, 200, 200);
@@ -54,12 +54,24 @@ CameraWnd::~CameraWnd()
 void CameraWnd::InitWnd()
 {
 	_pLog->info("InitWnd begin");
+	_hInst = NULL;
+	_hParent = NULL;
+	m_hWnd = NULL;
+	m_hPreviewWnd = NULL;
+	_mask = false;
+	_preview = false;
+	_id = -1;
+	_angle = 0;
+	_gray = false;
+	_show = false;
+	_run = false;
+
 	ResetEvent(m_hAsyncEventHandle);
 
 	// 启动界面线程
 	DWORD dwThreadId = 0;
 	HANDLE hThread = CreateThread(NULL, 0, AsyncConstructCameraWnd, this, 0, &dwThreadId);
-	_pLog->info("working thread is constructed! threadID={}", dwThreadId);
+	_pLog->info("AsyncConstructCameraWnd thread start! threadID={}", dwThreadId);
 	DWORD waitRet = WaitForSingleObject(m_hAsyncEventHandle, 10000);
 
 	// 启动处理视频帧线程
@@ -71,8 +83,17 @@ void CameraWnd::InitWnd()
 
 void CameraWnd::UninitWnd()
 {
-	KillTimer(m_hWnd, IDT_TIMER1);
-	PostMessage(m_hWnd, WM_DESTROY, NULL, NULL);
+	_pLog->info("UninitWnd begin");
+	if (NULL != m_hWnd)
+	{
+		_pLog->info("UninitWnd do");
+		KillTimer(m_hWnd, IDT_TIMER1);
+		ResetEvent(m_hAsyncEventHandle);
+		PostMessage(m_hWnd, WM_DESTROY, NULL, NULL);
+		WaitForSingleObject(m_hAsyncEventHandle, INFINITE);
+		m_hWnd = NULL;
+	}
+	_pLog->info("UninitWnd end");
 }
 
 bool CameraWnd::CameraMask(LPCAM_MASK lpCamMask)
@@ -160,9 +181,11 @@ int CameraWnd::ConstructCameraWnd()
 		DispatchMessage(&msg);
 	}
 	msg.wParam;
+	SetEvent(m_hAsyncEventHandle);
+
+	_pLog->info("AsyncConstructCameraWnd thread end");
 	return 0;
 }
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -221,7 +244,7 @@ ATOM CameraWnd::MyRegisterClass(HINSTANCE hInstance)
 			GetSystemMetrics(SM_CYSMICON),
 			LR_DEFAULTCOLOR);
 
-		reg = RegisterClassExW(&wcex);
+		reg = RegisterClassEx(&wcex);
 	}
 
 	return reg;
@@ -391,7 +414,6 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 	{
 	case IDT_TIMER1:
 	{
-		
 		if (_videoCapture.isOpened())
 		{
 			HWND hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera Properties"));
@@ -482,7 +504,13 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 				_videoCapture.release();
 			}
 		}
-		_pLog->flush();
+		else
+		{
+			if (_id != -1)
+			{
+				ShowWindow(m_hPreviewWnd, SW_HIDE);
+			}
+		}
 		break;
 	}
 	default:
@@ -547,6 +575,20 @@ void CameraWnd::OnCameraCapture(LPCAM_CAPTURE lpCamCapture)
 
 	// [TODO] handle text
 	// [TODO] handle hPixel and vPixel
+}
+
+LRESULT CameraWnd::workingProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = FALSE;
+
+	switch (message)
+	{
+
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return result;
+
 }
 
 LRESULT CameraWnd::process(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -630,6 +672,9 @@ LRESULT CameraWnd::runProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 		case IDB_RESUME:
 			::PostMessage(hWnd, WM_CW_CAMERA_RESUME, NULL, NULL);
 			break;
+		case IDB_QUIT:
+			DestroyWindow(hWnd);
+			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -655,12 +700,10 @@ LRESULT CameraWnd::runProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam
 		break;
 	}
 	case WM_DESTROY:
-		SetEvent(m_hAsyncEventHandle);
+	{
 		PostQuitMessage(0);
 		break;
-	case WM_NCDESTROY:
-		//KillTimer(m_hWnd, IDT_TIMER1);
-		break;
+	}
 	default:
 		return process(hWnd, message, wParam, lParam);
 	}

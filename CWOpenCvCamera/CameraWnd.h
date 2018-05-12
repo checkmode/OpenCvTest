@@ -63,6 +63,7 @@ public:
 private:
 	int ConstructCameraWnd();
 	int StartWorking();
+	
 	void addControl(HWND hWnd);
 	ATOM MyRegisterClass(HINSTANCE hInstance);
 	BOOL InitInstance(HINSTANCE, int);
@@ -71,6 +72,7 @@ private:
 	static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 	static LRESULT CALLBACK PreviewDlgProc(HWND, UINT, WPARAM, LPARAM);
 
+	LRESULT workingProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT process(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	LRESULT runProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -100,6 +102,7 @@ private:
 	cv::Mat _frameROI;
 	cv::Mat _finalImg;
 	cv::Rect _rectROI;
+	Mutex _imgMutex;
 	int _angle;
 	bool _mask;
 	bool _show;
