@@ -416,9 +416,14 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 	{
 		if (_videoCapture.isOpened())
 		{
+            // 英文系统的摄像头属性面板窗口名称为 "USB Camera Properties"
 			HWND hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera Properties"));
 			if (NULL != hwndProperty)
 				SetWindowPos(hwndProperty, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE| SWP_NOMOVE);
+            // 中文系统的摄像头属性面板窗口名称为 "USB Camera 属性"
+            hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera 属性"));
+            if (NULL != hwndProperty)
+                SetWindowPos(hwndProperty, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
 			_pLog->info("OnTimer read begin");
 			bool bSuccess = _videoCapture.read(_frame);
