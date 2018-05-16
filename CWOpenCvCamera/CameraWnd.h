@@ -102,7 +102,7 @@ private:
 	cv::Mat _frameROI;
 	cv::Mat _finalImg;
 	cv::Rect _rectROI;
-	Mutex _imgMutex;
+	//Mutex _imgMutex;
 	int _angle;
 	bool _mask;
 	bool _show;
