@@ -418,21 +418,31 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 		{
             // 英文系统的摄像头属性面板窗口名称为 "USB Camera Properties"
 			HWND hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera Properties"));
-			if (NULL != hwndProperty)
-				SetWindowPos(hwndProperty, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE| SWP_NOMOVE);
-            // 中文系统的摄像头属性面板窗口名称为 "USB Camera 属性"
-            hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera 属性"));
+            if (NULL == hwndProperty)
+            {
+                // 中文系统的摄像头属性面板窗口名称为 "USB Camera 属性"
+                hwndProperty = FindWindow(TEXT("#32770"), TEXT("USB Camera 属性"));
+            }
             if (NULL != hwndProperty)
-                SetWindowPos(hwndProperty, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+            {
+                HWND hForeWnd = ::GetForegroundWindow();
+                DWORD dwForeID = ::GetWindowThreadProcessId(hForeWnd, NULL);
+                DWORD dwCurID = ::GetCurrentThreadId();
+                ::AttachThreadInput(dwCurID, dwForeID, TRUE);
+                ::ShowWindow(hwndProperty, SW_SHOWNORMAL);
+                ::SetForegroundWindow(hwndProperty);
+                ::SetWindowPos(hwndProperty, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+                ::AttachThreadInput(dwCurID, dwForeID, FALSE);
+            }
 
-			_pLog->info("OnTimer read begin");
+			//_pLog->info("OnTimer read begin");
 			bool bSuccess = _videoCapture.read(_frame);
-			_pLog->info("OnTimer read end");
+			//_pLog->info("OnTimer read end");
 			if (bSuccess)
 			{
 				if (_preview)
 				{
-					_pLog->info("OnTimer handle img begin");
+					//_pLog->info("OnTimer handle img begin");
 
 					if (_matPreview)
 						imshow("live", _frame);
@@ -453,7 +463,7 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 
 					Mat dstImg;
 					Mat tmpImg;
-					_pLog->info("OnTimer focus img begin");
+					//_pLog->info("OnTimer focus img begin");
 					if (_mask)
 					{
 						// 显示视频所有区域，ROI 区域完全显示，非 ROI 区域以遮罩的形式显示
@@ -469,34 +479,34 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 						_frameROI.copyTo(dstImg);
 					}
 					dstImg.copyTo(tmpImg);
-					_pLog->info("OnTimer focus img end");
+					//_pLog->info("OnTimer focus img end");
 
 					// rotate image with angle
 					if (0 != _angle)
 					{
-						_pLog->info("OnTimer rotateImg img begin");
+						//_pLog->info("OnTimer rotateImg img begin");
 						rotateImg(tmpImg, dstImg, _angle);
 						dstImg.copyTo(tmpImg);
 						if (_matPreview)
 							imshow("rotate", dstImg);
-						_pLog->info("OnTimer rotateImg img end");
+						//_pLog->info("OnTimer rotateImg img end");
 					}
 
 					// convert to gray color
 					if (_gray)
 					{
-						_pLog->info("OnTimer _gray img begin");
+						//_pLog->info("OnTimer _gray img begin");
 						cvtColor(tmpImg, dstImg, CV_BGR2GRAY);
 						dstImg.copyTo(tmpImg);
 						if (_matPreview)
 							imshow("gray", dstImg);
-						_pLog->info("OnTimer _gray img end");
+						//_pLog->info("OnTimer _gray img end");
 					}
-					_pLog->info("OnTimer copyMatToHwnd img begin");
+					//_pLog->info("OnTimer copyMatToHwnd img begin");
 					copyMatToHwnd(dstImg, m_hPreviewWnd);
 					dstImg.copyTo(_finalImg);
-					_pLog->info("OnTimer copyMatToHwnd img end");
-					_pLog->info("OnTimer handle img end");
+					//_pLog->info("OnTimer copyMatToHwnd img end");
+					//_pLog->info("OnTimer handle img end");
 				}
 				else
 				{
