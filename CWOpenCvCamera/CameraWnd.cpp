@@ -1023,7 +1023,8 @@ void CameraWnd::setFrame(int w, int h)
 	{
 		int setCount = 0;
 		bool setOk = false;
-		while (!setOk && setCount < 1)
+        // make sure the setting works.
+		while (!setOk && setCount < 5)
 		{
 			if (w == _videoCapture.get(CV_CAP_PROP_FRAME_WIDTH) &&
 				h == _videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT))
