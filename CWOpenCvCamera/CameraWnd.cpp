@@ -1024,7 +1024,7 @@ void CameraWnd::setFrame(int w, int h)
 		int setCount = 0;
 		bool setOk = false;
         // make sure the setting works.
-		while (!setOk && setCount < 5)
+		while (!setOk && setCount < 10)
 		{
 			if (w == _videoCapture.get(CV_CAP_PROP_FRAME_WIDTH) &&
 				h == _videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT))
@@ -1036,6 +1036,7 @@ void CameraWnd::setFrame(int w, int h)
 				_videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, h);
 				_pLog->info("setCount={}, CV_CAP_PROP_FRAME_WIDTH={}, CV_CAP_PROP_FRAME_HEIGHT={}",
 					setCount, _videoCapture.get(CV_CAP_PROP_FRAME_WIDTH), _videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT));
+                Sleep(100);
 			}
 			++setCount;
 		}
