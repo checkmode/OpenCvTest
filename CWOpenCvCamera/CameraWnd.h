@@ -102,6 +102,8 @@ private:
 	cv::Mat _frameROI;
 	cv::Mat _finalImg;
 	cv::Rect _rectROI;
+    int _frameW;
+    int _frameH;
 	//Mutex _imgMutex;
 	int _angle;
 	bool _mask;

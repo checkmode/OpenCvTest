@@ -37,6 +37,8 @@ CameraWnd::CameraWnd(std::shared_ptr<spdlog::logger> pLog)
 	, _angle(0)
 	, _run(true)
 	, _id(-1)
+    , _frameW(640)
+    , _frameH(480)
 	, m_hAsyncEventHandle(INVALID_HANDLE_VALUE)
 {
 	_rectROI = cv::Rect(0, 0, 200, 200);
@@ -517,6 +519,11 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 			{
 				_pLog->error("read frame failed! auto release camera");
 				_videoCapture.release();
+
+                _pLog->info("prepare to reopen camera and setFrame");
+                bool open = openCamera(_id);
+                if (open)
+                    setFrame(_frameW, _frameH);
 			}
 		}
 		else
@@ -1013,12 +1020,20 @@ bool CameraWnd::openCamera(int id)
 			_pLog->info("_videoCapture.open({}) = {}", _id, bOk);
 		}
 	}
+    if (bOk)
+    {
+        Mat frame;
+        bool read = _videoCapture.read(frame);
+        _pLog->info("_videoCapture read 1 frame ater open");
+        if (frame.empty() || !read)
+            _pLog->error("_videoCapture read 1 frame failed, read={}", read);
+    }
 	return bOk;
 }
 
 void CameraWnd::setFrame(int w, int h)
 {
-	_pLog->info("setFrame({}, {})", w, h);
+	_pLog->info("prepare setFrame({}, {})", w, h);
 	if (w > 0 && h > 0)
 	{
 		int setCount = 0;
@@ -1026,12 +1041,29 @@ void CameraWnd::setFrame(int w, int h)
         // make sure the setting works.
 		while (!setOk && setCount < 10)
 		{
-			if (w == _videoCapture.get(CV_CAP_PROP_FRAME_WIDTH) &&
-				h == _videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT))
+            _frameW = _videoCapture.get(CV_CAP_PROP_FRAME_WIDTH);
+            _frameH = _videoCapture.get(CV_CAP_PROP_FRAME_HEIGHT);
+			if (w == _frameW && h == _frameH)
 				setOk = true;
 
 			if (!setOk)
 			{
+                // Get Codec Type- Int form
+                int ex = static_cast<int>(_videoCapture.get(CV_CAP_PROP_FOURCC));     
+                // Transform from int to char via Bitwise operators
+                char EXT[] = { (char)(ex & 0XFF) , (char)((ex & 0XFF00) >> 8),(char)((ex & 0XFF0000) >> 16),(char)((ex & 0XFF000000) >> 24), 0 };
+                _pLog->info("get CV_CAP_PROP_FOURCC={}", EXT);
+                if (0 != memcmp(EXT, "YUY2", 4))
+                {
+                    _videoCapture.set(CV_CAP_PROP_FOURCC,CV_FOURCC('Y','U','Y','2'));
+                    //_videoCapture.set(CV_CAP_PROP_FPS, 30);
+
+                    int ex1 = static_cast<int>(_videoCapture.get(CV_CAP_PROP_FOURCC));
+                    // Transform from int to char via Bitwise operators
+                    char EXT1[] = { (char)(ex1 & 0XFF) , (char)((ex1 & 0XFF00) >> 8),(char)((ex1 & 0XFF0000) >> 16),(char)((ex1 & 0XFF000000) >> 24), 0 };
+                    _pLog->info("ater set CV_CAP_PROP_FOURCC={}", EXT1);
+                }
+
 				_videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, w);
 				_videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, h);
 				_pLog->info("setCount={}, CV_CAP_PROP_FRAME_WIDTH={}, CV_CAP_PROP_FRAME_HEIGHT={}",
