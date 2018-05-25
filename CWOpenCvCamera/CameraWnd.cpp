@@ -521,9 +521,18 @@ void CameraWnd::OnTimer(WPARAM wParam, LPARAM lParam)
 				_videoCapture.release();
 
                 _pLog->info("prepare to reopen camera and setFrame");
-                bool open = openCamera(_id);
-                if (open)
-                    setFrame(_frameW, _frameH);
+                int retryCount = 0;
+                bool open = false;
+                while (!open && retryCount < 20)
+                {
+                    _pLog->info("retryCount={}", retryCount);
+                    open = openCamera(_id);
+                    if (open)
+                        setFrame(_frameW, _frameH);
+                    else
+                        Sleep(500);
+                    ++retryCount;
+                }
 			}
 		}
 		else
@@ -777,7 +786,7 @@ bool CameraWnd::CameraDo(UINT message, LPARAM lParam)
 	ResetEvent(m_hAsyncEventHandle);
 	SendMessage(m_hWnd, message, NULL, lParam);
 
-	DWORD waitRet = WaitForSingleObject(m_hAsyncEventHandle, 10000);
+	DWORD waitRet = WaitForSingleObject(m_hAsyncEventHandle, 20000);
 	if (WAIT_OBJECT_0 == waitRet)
 		return true;
 	return false;
